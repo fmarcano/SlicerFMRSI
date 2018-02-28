@@ -10,9 +10,9 @@ class PlotClass(object):
     """    % constantes   """
     STATUS_OK = 0;
     status = STATUS_OK ;
-    VOLUMENODENAME_MANDATORY = -2;
+    nodeName_MANDATORY = -2;
     
-    volumeNodeName = [];
+    nodeName = [];
     selectedSpectrum = 0;
     range = [];
     Title= 'SV Spectrum';
@@ -26,8 +26,8 @@ class PlotClass(object):
     """   end   % Constructor   """    
     
     def plotSpectrum(self,args):    
-        if "volumeNodeName" in args: 
-            self.volumeNodeName   = args["volumeNodeName"];
+        if "nodeName" in args: 
+            self.nodeName   = args["nodeName"];
         if "selectedSpectrum" in args: 
             self.selectedSpectrum    = args["selectedSpectrum"];
         if "range" in args: 
@@ -35,11 +35,11 @@ class PlotClass(object):
         if "units" in args: 
             self.units = args["units"];     
             self.XLabel = self.units;        
-        if not self.volumeNodeName:
-            self.status = self.VOLUMENODENAME_MANDATORY; 
+        if not self.nodeName:
+            self.status = self.nodeName_MANDATORY; 
             return self.status;
             
-        volumeNode = slicer.util.getNode(self.volumeNodeName)
+        volumeNode = slicer.util.getNode(self.nodeName)
     
         if volumeNode is not None:        
             figure = figureClass.FigureClass(); 
@@ -55,7 +55,7 @@ class PlotClass(object):
                                   "spectralBandwidth":spectralBandwidth,"spectrumLength":spectrumLength,
                                   "range":self.range, "units":self.units});                             
         
-            data = slicer.util.array(self.volumeNodeName);          
+            data = slicer.util.array(self.nodeName);          
             dataFFT = complexLibrary.fftReversed(data,int(self.selectedSpectrum));
                 
             if not self.range:

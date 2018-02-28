@@ -491,7 +491,7 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   def plotSpectrum(self,N,xRange,units):
     N = N -  1;
     plotSpectrum = plotClass.PlotClass();
-    plotSpectrum.plotSpectrum({"volumeNodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});     
+    plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});     
     return;
     
   #%  setXRangeSlide(self,fromUnits,toUnits,limit1,limit2):
