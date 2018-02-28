@@ -1,3 +1,19 @@
+#%
+#% PFileParser module imports:
+#%
+#%  import os
+#%  import numpy as np 
+#%  import unittest
+#%  import vtk, qt, ctk, slicer
+#%  from slicer.ScriptedLoadableModule import *
+#%  import logging
+#%  from fMRSICore import PFileClass as pFileClass
+#%  from fMRSICore import ComplexLibraryClass as complexLibraryClass
+#%  from fMRSICore import PlotClass as plotClass
+#%  from fMRSICore import UnitClass as unitClass
+#%  import math
+#%
+#%
 import os
 import numpy as np 
 import unittest
@@ -8,20 +24,24 @@ from fMRSICore import PFileClass as pFileClass
 from fMRSICore import ComplexLibraryClass as complexLibraryClass
 from fMRSICore import PlotClass as plotClass
 from fMRSICore import UnitClass as unitClass
-
-
 import math
 
 
-#
-# PFileParser
-#
+#%
+#% PFileParser Class properties and methods:
+#%
 
 class PFileParser(ScriptedLoadableModule):
   """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
   
+  #%  __init__(self,parent):      
+  #%      Method for class initialization and metainfo customization (module title, categories, contributors, help, etc.)
+  #% 
+  #%      History:
+  #%          20180208 - Function definition 
+  #% 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
     self.parent.title = "PFileParser" # TODO make this more human readable by adding spaces
@@ -38,36 +58,41 @@ and was partially funded by <ORGANIZATION>.
 """ # replace with organization, grant and thanks.
 
 
-#
-# PFileParserWidget
-#
-
+#%
+#% PFileParserWidget Class properties and methods:
+#%
 class PFileParserWidget(ScriptedLoadableModuleWidget):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
+  #%  setup(self):      
+  #%      User interface definition for fMRSI module (widgets)
+  #% 
+  #%      History:
+  #%          20180208 - Function definition 
+  #% 
   def setup(self):
     ScriptedLoadableModuleWidget.setup(self)
 
     self.logic = PFileParserLogic();
         
-    # Instantiate and connect widgets ...
+    #  Instantiate and connect widgets ...
 
    
-    #
-    # Parameters Area
-    #
+    # 
+    #  Parameters Area
+    # 
     parametersCollapsibleButton = ctk.ctkCollapsibleButton()
     parametersCollapsibleButton.text = "Parameters"
     self.layout.addWidget(parametersCollapsibleButton)
 
-    # Layout within the dummy collapsible button
+    #  Layout within the dummy collapsible button
     parametersFormLayout = qt.QFormLayout(parametersCollapsibleButton)
 
-    #
-    # input volume selector
-    #
+    # 
+    #  input volume selector
+    # 
     self.inputSelector = slicer.qMRMLNodeComboBox()
     self.inputSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
     self.inputSelector.selectNodeUponCreation = True
@@ -80,38 +105,38 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     self.inputSelector.setToolTip( "Pick the input to the algorithm." )
     parametersFormLayout.addRow("Input Volume: ", self.inputSelector)    
  
-    # %%%%%%%%%%%%%%%  Read PFile button section %%%%%%%%%%%%%%
+    #  %%%%%%%%%%%%%%%  Read PFile button section %%%%%%%%%%%%%%
         
-    # Collapsible bar 
+    #  Collapsible bar 
     pCollapsibleBar = ctk.ctkCollapsibleButton()
     pCollapsibleBar.text = "fMRSI data"
     self.layout.addWidget(pCollapsibleBar)
     
-    # Layout within the sample collapsible button
+    #  Layout within the sample collapsible button
     formLayout = qt.QFormLayout(pCollapsibleBar)
 
-    # Frame input edit sub-layout
+    #  Frame input edit sub-layout
     frameLayout = qt.QHBoxLayout(pCollapsibleBar)
 
     pStartAtFrameText = self.createFrameText(frameLayout,"From frame: ",100,"First frame to be read from fMRSI file (1 = first).");
 
-    # Add spacer
+    #  Add spacer
     frameLayout.addStretch(1)
     
-    # Text input frame end
+    #  Text input frame end
     pStopAtFrameText = self.createFrameText(frameLayout,"To frame: ",100,"Last frame to be read from fMRSI file.");
 
-    # Add horizontal frame to form layout
+    #  Add horizontal frame to form layout
     formLayout.addRow(frameLayout);
     
-    # ============== Buttons ==============
-    # Button widget code
+    #  ============== Buttons ==============
+    #  Button widget code
     pFileButton = qt.QPushButton("Read PFile...")
     pFileButton.toolTip = "Load raw PFile (.7) data"
     pFileButton.enabled = False
     formLayout.addRow(pFileButton)
     
-    # =============== Radio Buttons ========
+    #  =============== Radio Buttons ========
     self.units = ("ppm", "hz", "points")
 
     pUnitsBox = qt.QGroupBox("Units")
@@ -127,9 +152,9 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     pUnitsButtons[self.selectedUnits].checked = True;
     formLayout.addRow(pUnitsBox)
    
-    # =============== Sliders ==============
+    #  =============== Sliders ==============
     
-    # Frame slider
+    #  Frame slider
     pFrameSlider = ctk.ctkSliderWidget();
     pFrameSlider.decimals = 0;
     pFrameSlider.minimum = 1;
@@ -137,7 +162,7 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     pFrameSlider.enabled = False;        
     formLayout.addRow("Frame:", pFrameSlider);
     
-    # X axis Slider
+    #  X axis Slider
     pXAxisRange = ctk.ctkRangeWidget()   
     pXAxisRange.enabled = False; 
     pXAxisRange.minimum = 0.0   
@@ -145,20 +170,20 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
 
     formLayout.addRow("X axis range:", pXAxisRange);
 
-    # Button widget code
+    #  Button widget code
     pPlotSpectrumButton = qt.QPushButton("Plot Spectrum...")
     pPlotSpectrumButton.toolTip = "Plot mean single voxel spectrum from PFile (.7) data"
     pPlotSpectrumButton.enabled = False
     formLayout.addRow(pPlotSpectrumButton)   
     
-    # ============== Info Text ==============
-    # Text Info  
+    #  ============== Info Text ==============
+    #  Text Info  
     pInfoText = qt.QTextEdit()
     pInfoText.setReadOnly(True);
     pInfoText.setToolTip("Data read from fMRSI file.");        
     formLayout.addRow(pInfoText)
 
-    # connections
+    #  connections
     pFileButton.connect('clicked(bool)', self.onPFileButtonClicked)
     pPlotSpectrumButton.connect('clicked(bool)', self.onPlotSpectrumButtonClicked)
     self.inputSelector.connect('currentNodeChanged(vtkMRMLNode*)', self.onSelect)
@@ -166,7 +191,7 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     for units in self.units:
       pUnitsButtons[units].connect('clicked()', lambda u=units: self.onPUnitsButtonsClicked(u));
       
-    # Set local var as instance attribute
+    #  Set local var as instance attribute
     self.pFileButton = pFileButton
     self.pPlotSpectrumButton = pPlotSpectrumButton
     self.pInfoText = pInfoText ;
@@ -177,22 +202,22 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     self.pUnitsBox = pUnitsBox;
     self.pUnitsButtons = pUnitsButtons;
     
-    # Add spacer
+    #  Add spacer
     self.layout.addStretch(1);
     
-    # Refresh button status
+    #  Refresh button status
     self.onSelect()
    
-  # setUnits(self,units):       
-  #     X axis setup in corresponding units ('ppm', 'hz', 'points')
-  #
-  #     History:
-  #         20180208 - Function definition 
-  #
+  #%  setUnits(self,units):       
+  #%      X axis setup in corresponding units ('ppm', 'hz', 'points')
+  #% 
+  #%      History:
+  #%          20180208 - Function definition 
+  #% 
   def setUnits(self,units):       
-    # Se debe cambiar lo mas pronto posible self.selectedUnits para evitar problemas con orden de atencion de eventos
-    # ejemplo, con invocacion a onXAxisRangeValueChanged. Para ello tomamos el valor previo y lo ponemos en 
-    # variable local selectedUnits
+    #  Se debe cambiar lo mas pronto posible self.selectedUnits para evitar problemas con orden de atencion de eventos
+    #  ejemplo, con invocacion a onXAxisRangeValueChanged. Para ello tomamos el valor previo y lo ponemos en 
+    #  variable local selectedUnits
     selectedUnits = self.selectedUnits; 
     self.selectedUnits = units
     self.pUnitsButtons[units].checked = True
@@ -208,30 +233,30 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     self.pXAxisRange.singleStep = 1;
             
     
-  # ========= Utilities  =======================
+  #  ========= Utilities  =======================
      
-  # cleanup(self):
-  #     Default cleanup method
-  #
-  #     History:
-  #         20180208 - Function definition 
-  #
+  #%  cleanup(self):
+  #%      Default cleanup method
+  #% 
+  #%      History:
+  #%          20180208 - Function definition 
+  #% 
   def cleanup(self):
     pass
      
-  # createFrameText(self,frameLayout,title,width,tooltip):
-  #     FrameText Line Edit control definition
-  #
-  #     History:
-  #         20180208 - Function definition 
-  #
+  #%  createFrameText(self,frameLayout,title,width,tooltip):
+  #%      FrameText Line Edit control definition
+  #% 
+  #%      History:
+  #%          20180208 - Function definition 
+  #% 
   def createFrameText(self,frameLayout,title,width,tooltip):   
-    # TODO: crear validador de entrada a campo para filtrar valores no permitidos   
+    #  TODO: crear validador de entrada a campo para filtrar valores no permitidos   
     pFrameText = qt.QLineEdit();
-    #validator = qt.QIntValidator(1,100,pFrameText);
-    #pFrameText.setValidator(validator);
+    # validator = qt.QIntValidator(1,100,pFrameText);
+    # pFrameText.setValidator(validator);
     pFrameText.setMaximumWidth(width);
-    #pFrameText.focusPolicy(qt.StrongFocus)
+    # pFrameText.focusPolicy(qt.StrongFocus)
     pFrameLabel = qt.QLabel(title);
     pFrameLabel.setMaximumWidth(width);
     pFrameText.setToolTip(tooltip);        
@@ -241,33 +266,33 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     return (pFrameText);
       
     
-  # setInfo(self,info):
-  #     Fills info text control with data read from Pfile
-  #
-  #     History:
-  #         20180208 - Function definition 
-  #
+  #%  setInfo(self,info):
+  #%      Fills info text control with data read from Pfile
+  #% 
+  #%      History:
+  #%          20180208 - Function definition 
+  #% 
   def setInfo(self,info):  
     self.pInfoText.setPlainText(info);  
 
-  # ========= Event handling (widgets) ========================
+  #  ========= Event handling (widgets) ========================
    
-  # onFrameSliderValueChanged(self, newValue):
-  #     Event handling for "Frame" slider  
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #
+  #%  onFrameSliderValueChanged(self, newValue):
+  #%      Event handling for "Frame" slider  
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #% 
   def onFrameSliderValueChanged(self, newValue):
     self.logic.plotSpectrum(newValue,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
    
   
-  # onPFileButtonClicked(self):
-  #     Event handling for "Plot Spectrum" button  
-  # 
-  #     History:
-  #         20180208 - "if fMRSI...else..." statement added  
-  #
+  #%  onPFileButtonClicked(self):
+  #%      Event handling for "Plot Spectrum" button  
+  #%  
+  #%      History:
+  #%          20180208 - "if fMRSI...else..." statement added  
+  #% 
   def onPFileButtonClicked(self):
     fMRSI = self.logic.doParse(self.inputSelector.currentNode(),[self.pStartAtFrameText.text,self.pStopAtFrameText.text]);
 
@@ -284,52 +309,52 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     else:
         self.pPlotSpectrumButton.setEnabled(False);
   
-  # onPlotSpectrumButtonClicked(self):
-  #     Event handling for "Plot Spectrum" button  
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #
+  #%  onPlotSpectrumButtonClicked(self):
+  #%      Event handling for "Plot Spectrum" button  
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #% 
   def onPlotSpectrumButtonClicked(self):
     self.logic.plotSpectrum(self.pFrameSlider.value,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
 
-  # onPUnitsButtonsClicked(self,units):
-  #     Event handling for clicks on PUnitsButtons 
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #
+  #%  onPUnitsButtonsClicked(self,units):
+  #%      Event handling for clicks on PUnitsButtons 
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #% 
   def onPUnitsButtonsClicked(self,units):
       self.setUnits(units); 
       self.onPlotSpectrumButtonClicked();   
   
-  # onSelect(self):
-  #     Visibility handling for pFileButton and info text control initialization
-  #
-  #     History:
-  #         20180208 - Function definition 
-  #
+  #%  onSelect(self):
+  #%      Visibility handling for pFileButton and info text control initialization
+  #% 
+  #%      History:
+  #%          20180208 - Function definition 
+  #% 
   def onSelect(self):
     self.pFileButton.enabled = self.inputSelector.currentNode() 
 
-    # Clean info if input volume not selected
+    #  Clean info if input volume not selected
     if not self.pFileButton.enabled:
         self.setInfo('');
 
-  # onXAxisRangeValueChanged(self,minimum,maximum):
-  #     Event handling for value changes in pFrameSlider slider  
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #
+  #%  onXAxisRangeValueChanged(self,minimum,maximum):
+  #%      Event handling for value changes in pFrameSlider slider  
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #% 
   def onXAxisRangeValueChanged(self,minimum,maximum):
     self.logic.plotSpectrum(self.pFrameSlider.value,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
     return;
     
       
-#
-# PFileParserLogic
-#
+#%
+#% PFileParserLogic Class properties and methods:
+#%
 class PFileParserLogic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
   computation done by your module.  The interface
@@ -340,21 +365,23 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
    
-  # Constant definitions
-  #     History:
-  #         20180208 - scalarNodeFMRSIName   
-  #
+  #%  Constant definitions
+  #%      scalarNodeFMRSIName = 'scalarNodeFMRSI', defult name for fMRSI scalaar node
+  #%
+  #%      History:
+  #%          20180208 - scalarNodeFMRSIName   
+  #% 
   scalarNodeFMRSIName = 'scalarNodeFMRSI';
 
   
-  # createfMRSINode(self,fMRSI):
-  #     Creates new fMRSI scalar node from input struct (fMRSI from doParse)
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #
+  #%  createfMRSINode(self,fMRSI):
+  #%      Creates new fMRSI scalar node from input struct (fMRSI from doParse)
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #% 
   def createfMRSINode(self,fMRSI):   
-    # Delete previous existing nodes
+    #  Delete previous existing nodes
     slicer.mrmlScene.RemoveNode(slicer.util.getNode(self.scalarNodeFMRSIName));
     spectrumLength = fMRSI.rh_frame_size;
     narray = np.asarray(fMRSI.sout);
@@ -372,7 +399,7 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
     vimage.SetDimensions(vshape)
     vimage.AllocateScalars(vtype, vcomponents)
   
-    # Notification (image data change)
+    #  Notification (image data change)
     volumeNode.StorableModified()
     volumeNode.Modified()
     volumeNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
@@ -392,18 +419,18 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
         volumeNode.Modified()
         volumeNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
 
-  # doParse(self,node,frameRangeSpec):  
-  #     PFile reading
-  #
-  #     Returns
-  #           In success: struct having read info
-  #           Otherwise:  false   
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #  
+  #%  doParse(self,node,frameRangeSpec):  
+  #%      PFile reading
+  #% 
+  #%      Returns
+  #%            In success: struct having read info
+  #%            Otherwise:  false   
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #%   
   def doParse(self,node,frameRangeSpec):  
-    # Reading current volumeNode
+    #  Reading current volumeNode
     fileName = self.getPFileName(node);
     frameRange = self.getFrameRange(frameRangeSpec);
     if fileName:
@@ -414,12 +441,12 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
         return(false);
   
     
-  # getFrameRange(self,frameRangeSpec):
-  #     Returns formatted range (list) from frameRangeSpec input list 
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #  
+  #%  getFrameRange(self,frameRangeSpec):
+  #%      Returns formatted range (list) from frameRangeSpec input list 
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #%   
   def getFrameRange(self,frameRangeSpec):
     try:
         start = str(int(frameRangeSpec[0])-1);
@@ -434,12 +461,12 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
     frameRange = start + ':' + stop;
     return frameRange;
   
-  # getPFileName(self,node): 
-  #     Returns full filename string from input node
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #  
+  #%  getPFileName(self,node): 
+  #%      Returns full filename string from input node
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #%   
   def getPFileName(self,node):
     fileName = [];
     if node:
@@ -452,27 +479,27 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
         fileName = pathName + '/' + fileName;
     return fileName;
 
-  # plotSpectrum(self,value,xRange,units):
-  #     Spectrum plot.
-  #     N:          spectrum to be plotted
-  #     xRange:     range in X axis to be displayed
-  #     units:      X axis units
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #        
+  #%  plotSpectrum(self,value,xRange,units):
+  #%      Spectrum plot.
+  #%      N:          spectrum to be plotted
+  #%      xRange:     range in X axis to be displayed
+  #%      units:      X axis units
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #%         
   def plotSpectrum(self,N,xRange,units):
     N = N -  1;
     plotSpectrum = plotClass.PlotClass();
     plotSpectrum.plotSpectrum({"volumeNodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});     
     return;
     
-  # setXRangeSlide(self,fromUnits,toUnits,limit1,limit2):
-  #     Determines values for X axis range slider   
-  # 
-  #     History:
-  #         20180208 - Function definition   
-  #  
+  #%  setXRangeSlide(self,fromUnits,toUnits,limit1,limit2):
+  #%      Determines values for X axis range slider   
+  #%  
+  #%      History:
+  #%          20180208 - Function definition   
+  #%   
   def setXRangeSlide(self,fromUnits,toUnits,limit1,limit2):
   
     node = slicer.util.getNode('scalarNodeFMRSI');
@@ -504,7 +531,7 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
     valueRange = sorted([unitObject.unit2unit(params3),unitObject.unit2unit(params4)]);
     return limits,valueRange;
 
-  #  =============== Default module wizard methods =====================
+  #   =============== Default module wizard methods =====================
   
   def hasImageData(self,volumeNode):
     """This is an example logic method that
@@ -534,34 +561,34 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
     return True
 
   def takeScreenshot(self,name,description,type=-1):
-    # show the message even if not taking a screen shot
+    #  show the message even if not taking a screen shot
     slicer.util.delayDisplay('Take screenshot: '+description+'.\nResult is available in the Annotations module.', 3000)
 
     lm = slicer.app.layoutManager()
-    # switch on the type to get the requested window
+    #  switch on the type to get the requested window
     widget = 0
     if type == slicer.qMRMLScreenShotDialog.FullLayout:
-      # full layout
+      #  full layout
       widget = lm.viewport()
     elif type == slicer.qMRMLScreenShotDialog.ThreeD:
-      # just the 3D window
+      #  just the 3D window
       widget = lm.threeDWidget(0).threeDView()
     elif type == slicer.qMRMLScreenShotDialog.Red:
-      # red slice window
+      #  red slice window
       widget = lm.sliceWidget("Red")
     elif type == slicer.qMRMLScreenShotDialog.Yellow:
-      # yellow slice window
+      #  yellow slice window
       widget = lm.sliceWidget("Yellow")
     elif type == slicer.qMRMLScreenShotDialog.Green:
-      # green slice window
+      #  green slice window
       widget = lm.sliceWidget("Green")
     else:
-      # default to using the full window
+      #  default to using the full window
       widget = slicer.util.mainWindow()
-      # reset the type so that the node is set correctly
+      #  reset the type so that the node is set correctly
       type = slicer.qMRMLScreenShotDialog.FullLayout
 
-    # grab and convert to vtk image data
+    #  grab and convert to vtk image data
     qimage = ctk.ctkWidgetsUtils.grabWidget(widget)
     imageData = vtk.vtkImageData()
     slicer.qMRMLUtils().qImageToVtkImageData(qimage,imageData)
@@ -580,11 +607,11 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
 
     logging.info('Processing started')
 
-    # Compute the xAxisRangeed output volume using the xAxisRange Scalar Volume CLI module
+    #  Compute the xAxisRangeed output volume using the xAxisRange Scalar Volume CLI module
     cliParams = {'InputVolume': inputVolume.GetID(), 'OutputVolume': outputVolume.GetID(), 'xAxisRangeValue' : imagexAxisRange, 'xAxisRangeType' : 'Above'}
     cliNode = slicer.cli.run(slicer.modules.xAxisRangescalarvolume, None, cliParams, wait_for_completion=True)
 
-    # Capture screenshot
+    #  Capture screenshot
     if enableScreenshots:
       self.takeScreenshot('PFileParserTest-Start','MyScreenshot',-1)
 
@@ -612,8 +639,8 @@ class PFileParserTest(ScriptedLoadableModuleTest):
     """
  
     
-    #self.setUp()
-    #self.test_PFileParser1()
+    # self.setUp()
+    # self.test_PFileParser1()
 
   def test_PFileParser1(self):
     """ Ideally you should have several levels of tests.  At the lowest level
@@ -628,9 +655,9 @@ class PFileParserTest(ScriptedLoadableModuleTest):
     """
 
     self.delayDisplay("Starting the test")
-    #
-    # first, get some data
-    #
+    # 
+    #  first, get some data
+    # 
     import urllib
     downloads = (
         ('http://slicer.kitware.com/midas3/download?items=5767', 'FA.nrrd', slicer.util.loadVolume),

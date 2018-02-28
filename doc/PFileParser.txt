@@ -1,0 +1,146 @@
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:#% PFileParser module imports:
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:#%  import os
+PFileParser/PFileParser.py:#%  import numpy as np 
+PFileParser/PFileParser.py:#%  import unittest
+PFileParser/PFileParser.py:#%  import vtk, qt, ctk, slicer
+PFileParser/PFileParser.py:#%  from slicer.ScriptedLoadableModule import *
+PFileParser/PFileParser.py:#%  import logging
+PFileParser/PFileParser.py:#%  from fMRSICore import PFileClass as pFileClass
+PFileParser/PFileParser.py:#%  from fMRSICore import ComplexLibraryClass as complexLibraryClass
+PFileParser/PFileParser.py:#%  from fMRSICore import PlotClass as plotClass
+PFileParser/PFileParser.py:#%  from fMRSICore import UnitClass as unitClass
+PFileParser/PFileParser.py:#%  import math
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:#% PFileParser Class properties and methods:
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:  #%  __init__(self,parent):      
+PFileParser/PFileParser.py:  #%      Method for class initialization and metainfo customization (module title, categories, contributors, help, etc.)
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition 
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:#% PFileParserWidget Class properties and methods:
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:  #%  setup(self):      
+PFileParser/PFileParser.py:  #%      User interface definition for fMRSI module (widgets)
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition 
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  setUnits(self,units):       
+PFileParser/PFileParser.py:  #%      X axis setup in corresponding units ('ppm', 'hz', 'points')
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition 
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  cleanup(self):
+PFileParser/PFileParser.py:  #%      Default cleanup method
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition 
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  createFrameText(self,frameLayout,title,width,tooltip):
+PFileParser/PFileParser.py:  #%      FrameText Line Edit control definition
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition 
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  setInfo(self,info):
+PFileParser/PFileParser.py:  #%      Fills info text control with data read from Pfile
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition 
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  onFrameSliderValueChanged(self, newValue):
+PFileParser/PFileParser.py:  #%      Event handling for "Frame" slider  
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  onPFileButtonClicked(self):
+PFileParser/PFileParser.py:  #%      Event handling for "Plot Spectrum" button  
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - "if fMRSI...else..." statement added  
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  onPlotSpectrumButtonClicked(self):
+PFileParser/PFileParser.py:  #%      Event handling for "Plot Spectrum" button  
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  onPUnitsButtonsClicked(self,units):
+PFileParser/PFileParser.py:  #%      Event handling for clicks on PUnitsButtons 
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  onSelect(self):
+PFileParser/PFileParser.py:  #%      Visibility handling for pFileButton and info text control initialization
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition 
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  onXAxisRangeValueChanged(self,minimum,maximum):
+PFileParser/PFileParser.py:  #%      Event handling for value changes in pFrameSlider slider  
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:#% PFileParserLogic Class properties and methods:
+PFileParser/PFileParser.py:#%
+PFileParser/PFileParser.py:  #%  Constant definitions
+PFileParser/PFileParser.py:  #%      scalarNodeFMRSIName = 'scalarNodeFMRSI', defult name for fMRSI scalaar node
+PFileParser/PFileParser.py:  #%
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - scalarNodeFMRSIName   
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  createfMRSINode(self,fMRSI):
+PFileParser/PFileParser.py:  #%      Creates new fMRSI scalar node from input struct (fMRSI from doParse)
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%  doParse(self,node,frameRangeSpec):  
+PFileParser/PFileParser.py:  #%      PFile reading
+PFileParser/PFileParser.py:  #% 
+PFileParser/PFileParser.py:  #%      Returns
+PFileParser/PFileParser.py:  #%            In success: struct having read info
+PFileParser/PFileParser.py:  #%            Otherwise:  false   
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #%   
+PFileParser/PFileParser.py:  #%  getFrameRange(self,frameRangeSpec):
+PFileParser/PFileParser.py:  #%      Returns formatted range (list) from frameRangeSpec input list 
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #%   
+PFileParser/PFileParser.py:  #%  getPFileName(self,node): 
+PFileParser/PFileParser.py:  #%      Returns full filename string from input node
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #%   
+PFileParser/PFileParser.py:  #%  plotSpectrum(self,value,xRange,units):
+PFileParser/PFileParser.py:  #%      Spectrum plot.
+PFileParser/PFileParser.py:  #%      N:          spectrum to be plotted
+PFileParser/PFileParser.py:  #%      xRange:     range in X axis to be displayed
+PFileParser/PFileParser.py:  #%      units:      X axis units
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #%         
+PFileParser/PFileParser.py:  #%  setXRangeSlide(self,fromUnits,toUnits,limit1,limit2):
+PFileParser/PFileParser.py:  #%      Determines values for X axis range slider   
+PFileParser/PFileParser.py:  #%  
+PFileParser/PFileParser.py:  #%      History:
+PFileParser/PFileParser.py:  #%          20180208 - Function definition   
+PFileParser/PFileParser.py:  #%   
