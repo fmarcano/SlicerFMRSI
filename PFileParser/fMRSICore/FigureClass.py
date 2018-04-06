@@ -1,5 +1,6 @@
 import slicer
 import math
+import numpy as np
 
 
 class FigureClass(object):
@@ -14,6 +15,7 @@ class FigureClass(object):
     Title = ' ';
     XLabel = ' ';
     YLabel = ' ';
+    volumeNode = None;
     Color = '#00FF00';
     chartName = 'chartNodeFMRSI';
     doubleArrayNodeFMRSIName = 'doubleArrayNodeFMRSI';
@@ -27,6 +29,73 @@ class FigureClass(object):
     def __init__(self):
         self.status = self.STATUS_OK;
     """   end   % Constructor   """
+
+    def xplot(self,args):
+        if "Title" in args: 
+            self.Title   = args["Title"];
+        if "XLabel" in args: 
+            self.XLabel    = args["XLabel"];
+        if "YLabel" in args: 
+            self.YLabel = args["YLabel"];        
+        if "Data" in args: 
+            self.Data = args["Data"];        
+        if "xAxis" in args: 
+            self.xAxis = args["xAxis"];        
+        if "Name" in args: 
+            self.chartName = args["Name"];            
+        if "volumeNode" in args: 
+            self.volumeNode = args["volumeNode"];
+            
+                  
+        
+        # Save results to a new table node
+        tableNodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLTableNode')
+        tableNodes.InitTraversal()
+        tableNode = tableNodes.GetNextItemAsObject()
+        if tableNode is None:
+            tableNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTableNode")
+        
+       
+        slicer.util.updateTableFromArray(tableNode, (self.xAxis,self.Data))        
+        
+        tableNode.GetTable().GetColumn(0).SetName(self.XLabel)
+        tableNode.GetTable().GetColumn(1).SetName(self.YLabel)    
+        
+    
+        # Create plot        
+        plotSeriesNodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLPlotSeriesNode')
+        plotSeriesNodes.InitTraversal()
+        plotSeriesNode = plotSeriesNodes.GetNextItemAsObject()
+        if plotSeriesNode is None:
+            plotSeriesNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotSeriesNode", self.volumeNode.GetName() + ' plot')
+        
+        
+        plotSeriesNode.SetAndObserveTableNodeID(tableNode.GetID())
+        plotSeriesNode.SetXColumnName(self.XLabel)
+        plotSeriesNode.SetYColumnName(self.YLabel)
+        plotSeriesNode.SetPlotType(plotSeriesNode.PlotTypeLine)
+        plotSeriesNode.SetMarkerStyle(plotSeriesNode.MarkerStyleNone)
+        plotSeriesNode.SetColor(0, 0.6, 1.0)
+
+        # Create chart and add plot
+        plotChartNodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLPlotChartNode')
+        plotChartNodes.InitTraversal()
+        plotChartNode = plotChartNodes.GetNextItemAsObject()
+        if plotChartNode is None:
+            plotChartNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotChartNode")
+            
+        plotChartNode.AddAndObservePlotSeriesNodeID(plotSeriesNode.GetID())
+        #plotChartNode.YAxisRangeAutoOff()
+        #plotChartNode.SetYAxisRange(0, 500000)
+        plotChartNode.SetXAxisRangeAuto(False)
+        #plotChartNode.XAxisRangeAutoOff()
+        plotChartNode.SetXAxisRange(self.xAxis[0],self.xAxis[-1])
+        plotChartNode.TitleVisibilityOn()
+        plotChartNode.XAxisTitleVisibilityOn()
+        plotChartNode.YAxisTitleVisibilityOn()
+        
+        # Show plot in layout
+        slicer.modules.plots.logic().ShowChartInLayout(plotChartNode)
 
 
     def plot(self,args):

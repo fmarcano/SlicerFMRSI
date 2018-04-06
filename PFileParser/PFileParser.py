@@ -24,6 +24,7 @@ from fMRSICore import PFileClass as pFileClass
 from fMRSICore import ComplexLibraryClass as complexLibraryClass
 from fMRSICore import PlotClass as plotClass
 from fMRSICore import UnitClass as unitClass
+from fMRSICore import SpectrumClass as spectrumClass
 import math
 
 
@@ -115,17 +116,17 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     #  Layout within the sample collapsible button
     formLayout = qt.QFormLayout(pCollapsibleBar)
 
-    #  Frame input edit sub-layout
+    #  ============= Frame input edit sub-layout ==========
     frameLayout = qt.QHBoxLayout(pCollapsibleBar)
 
     pStartAtFrameText = self.createFrameText(frameLayout,"From frame: ",100,"First frame to be read from fMRSI file (1 = first).");
-
+    
     #  Add spacer
     frameLayout.addStretch(1)
     
     #  Text input frame end
     pStopAtFrameText = self.createFrameText(frameLayout,"To frame: ",100,"Last frame to be read from fMRSI file.");
-
+     
     #  Add horizontal frame to form layout
     formLayout.addRow(frameLayout);
     
@@ -186,6 +187,8 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     #  connections
     pFileButton.connect('clicked(bool)', self.onPFileButtonClicked)
     pPlotSpectrumButton.connect('clicked(bool)', self.onPlotSpectrumButtonClicked)
+    pStartAtFrameText.textChanged.connect(self.onStartAtFrameChanged);
+    pStopAtFrameText.textChanged.connect( self.onStopAtFrameChanged);
     self.inputSelector.connect('currentNodeChanged(vtkMRMLNode*)', self.onSelect)
 
     for units in self.units:
@@ -301,11 +304,16 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
         self.setInfo(fMRSI.info());
         self.setUnits(self.units[0])
         self.pPlotSpectrumButton.setEnabled(True);
-        self.pFrameSlider.maximum = fMRSI.sout.size / fMRSI.rh_frame_size;
+        maxFrameValue = self.pStopAtFrameText.text.strip();
+        if maxFrameValue == '': 
+            self.pFrameSlider.maximum = fMRSI.sout.size / fMRSI.rh_frame_size;
+        else:
+            self.pFrameSlider.maximum = int(maxFrameValue);
+            
         self.pFrameSlider.setEnabled(True);
         self.pXAxisRange.setEnabled(True);
         self.pUnitsBox.setEnabled(True); 
-        self.onPlotSpectrumButtonClicked();     
+        self.onPlotSpectrumButtonClicked();   
     else:
         self.pPlotSpectrumButton.setEnabled(False);
   
@@ -341,6 +349,15 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     if not self.pFileButton.enabled:
         self.setInfo('');
 
+  def onStartAtFrameChanged(self,value):
+    if not (value == []):
+        self.pFrameSlider.minimum = int(value);    
+  
+  def onStopAtFrameChanged(self,value):
+    if not (value == []):
+        self.pFrameSlider.maximum = int(value);    
+  
+  
   #%  onXAxisRangeValueChanged(self,minimum,maximum):
   #%      Event handling for value changes in pFrameSlider slider  
   #%  
@@ -411,14 +428,19 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
     if volumeNode is not None: 
         complexLibrary = complexLibraryClass.ComplexLibraryClass();        
         voxelArray = complexLibrary.complexArray(slicer.util.array(self.scalarNodeFMRSIName),narray,vshape[0:2]);             
-        volumeNode.SetAttribute('centralFrequency',str(fMRSI.central_freq));
-        volumeNode.SetAttribute('ppmReference',str(fMRSI.ppm_reference));
-        volumeNode.SetAttribute('spectralBandwidth',str(fMRSI.spectral_width));
-        volumeNode.SetAttribute('spectrumLength',str(fMRSI.rh_frame_size));
+        self.setAttributes2fMRSINode(volumeNode,fMRSI);
         volumeNode.StorableModified()
         volumeNode.Modified()
         volumeNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
 
+    # %%%%%%%  ZONA DE PRUEBA  %%%%%%%%%%%%
+    
+    self.spectrumObject = spectrumClass.SpectrumClass();
+    #self.combinedFrames, self.reshapedSignal, self.signalPower, self.spectrumPower  = self.spectrumObject.processSpectra(volumeNode,fMRSI);    
+    self.combinedFrames, _ , self.signalPower, self.spectrumPower  = self.spectrumObject.processSpectra(volumeNode,fMRSI);    
+    
+
+        
   #%  doParse(self,node,frameRangeSpec):  
   #%      PFile reading
   #% 
@@ -491,9 +513,28 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   def plotSpectrum(self,N,xRange,units):
     N = N -  1;
     plotSpectrum = plotClass.PlotClass();
-    plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});     
-    return;
-    
+    #plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});     
+    plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName ,"combinedFrames":self.combinedFrames , "range":xRange, "units":units});     
+
+
+  
+  #% setAttributes2fMRSINode(node): 
+  #%      Sets specific attribute values taken from PFile to input node  
+  #%  
+  #%      History:
+  #%          20180301 - Function definition   
+  #%   
+  def setAttributes2fMRSINode(self,node,fMRSI):
+    node.SetAttribute('centralFrequency',str(fMRSI.central_freq));
+    node.SetAttribute('ppmReference',str(fMRSI.ppm_reference));
+    node.SetAttribute('spectralBandwidth',str(fMRSI.spectral_width));
+    node.SetAttribute('spectrumLength',str(fMRSI.rh_frame_size));
+    node.SetAttribute('totalFrames',str(fMRSI.total_frames_per_coil));
+    node.SetAttribute('channels',str(fMRSI.num_channels));
+    node.SetAttribute('zeroFrame',str(fMRSI.zero_frame));
+    node.SetAttribute('waterFrames',str(fMRSI.water_frames));
+ 
+ 
   #%  setXRangeSlide(self,fromUnits,toUnits,limit1,limit2):
   #%      Determines values for X axis range slider   
   #%  
