@@ -10,7 +10,8 @@ class FigureClass(object):
     FILE_ERROR = -1;
     status = STATUS_OK ;
     #figureArrangement = 24; # four up quantitative
-    figureArrangement = 26; # quantitative only
+    #figureArrangement = 26; # quantitative only
+    figureArrangement = 36; # Conventional quantitative interactive
     
     Title = ' ';
     XLabel = ' ';
@@ -21,6 +22,9 @@ class FigureClass(object):
     doubleArrayNodeFMRSIName = 'doubleArrayNodeFMRSI';
     Data = [];
     xAxis=[];
+    reverseXAxis = False;
+    pointRange = None;
+    hold = False;
     """
     """
     """ end %%% properties %%% """
@@ -45,6 +49,13 @@ class FigureClass(object):
             self.chartName = args["Name"];            
         if "volumeNode" in args: 
             self.volumeNode = args["volumeNode"];
+        if "reverseXAxis" in args: 
+            self.reverseXAxis = args["reverseXAxis"];
+        if "pointRange" in args: 
+            self.pointRange = args["pointRange"];
+        if "hold" in args: 
+            self.hold = args["hold"];
+            
             
                   
         
@@ -55,7 +66,19 @@ class FigureClass(object):
         if tableNode is None:
             tableNode=slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTableNode")
         
-       
+        
+        if self.reverseXAxis:
+            self.Data = self.Data[::-1];
+        
+        if not (self.pointRange is None):
+            self.Data = self.Data[self.pointRange];
+            self.xAxis = self.xAxis[self.pointRange];
+
+        xLimits = np.array([self.xAxis[0],self.xAxis[-1]]);
+        
+        if self.reverseXAxis:
+            xLimits = xLimits[::-1]
+             
         slicer.util.updateTableFromArray(tableNode, (self.xAxis,self.Data))        
         
         tableNode.GetTable().GetColumn(0).SetName(self.XLabel)
@@ -73,7 +96,7 @@ class FigureClass(object):
         plotSeriesNode.SetAndObserveTableNodeID(tableNode.GetID())
         plotSeriesNode.SetXColumnName(self.XLabel)
         plotSeriesNode.SetYColumnName(self.YLabel)
-        plotSeriesNode.SetPlotType(plotSeriesNode.PlotTypeLine)
+        plotSeriesNode.SetPlotType(plotSeriesNode.PlotTypeScatter)
         plotSeriesNode.SetMarkerStyle(plotSeriesNode.MarkerStyleNone)
         plotSeriesNode.SetColor(0, 0.6, 1.0)
 
@@ -84,20 +107,36 @@ class FigureClass(object):
         if plotChartNode is None:
             plotChartNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLPlotChartNode")
             
+        if not self.hold:
+            plotChartNode.RemoveAllPlotSeriesNodeIDs();
+            
         plotChartNode.AddAndObservePlotSeriesNodeID(plotSeriesNode.GetID())
         #plotChartNode.YAxisRangeAutoOff()
         #plotChartNode.SetYAxisRange(0, 500000)
         plotChartNode.SetXAxisRangeAuto(False)
         #plotChartNode.XAxisRangeAutoOff()
-        plotChartNode.SetXAxisRange(self.xAxis[0],self.xAxis[-1])
+        
+        plotChartNode.SetXAxisRange(xLimits)
+        
         plotChartNode.TitleVisibilityOn()
         plotChartNode.XAxisTitleVisibilityOn()
         plotChartNode.YAxisTitleVisibilityOn()
+        plotChartNode.SetXAxisTitle(self.XLabel);
+        plotChartNode.SetYAxisTitle(self.YLabel);        
+        
         
         # Show plot in layout
         slicer.modules.plots.logic().ShowChartInLayout(plotChartNode)
 
 
+        # Switch to a layout (24) that contains a Chart View to initiate the construction of the widget and Chart View Node
+        layoutNodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLLayoutNode')
+        layoutNodes.InitTraversal()
+        layoutNode = layoutNodes.GetNextItemAsObject()
+        
+        # TODO: DEFINE A PARAMETER FOR THIS
+        layoutNode.SetViewArrangement(self.figureArrangement); 
+        
     def plot(self,args):
     
         if "Title" in args: 
@@ -113,14 +152,7 @@ class FigureClass(object):
         if "Name" in args: 
             self.chartName = args["Name"];        
                     
-        # Switch to a layout (24) that contains a Chart View to initiate the construction of the widget and Chart View Node
-        layoutNodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLLayoutNode')
-        layoutNodes.InitTraversal()
-        layoutNode = layoutNodes.GetNextItemAsObject()
-        
-        # TODO: DEFINE A PARAMETER FOR THIS
-        layoutNode.SetViewArrangement(self.figureArrangement);      
-        
+                        
         # Get the Chart View Node
         chartViewNodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLChartViewNode')
         chartViewNodes.InitTraversal()

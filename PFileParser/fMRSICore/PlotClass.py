@@ -64,7 +64,7 @@ class PlotClass(object):
                                   "spectralBandwidth":spectralBandwidth,"spectrumLength":spectrumLength,
                                   "range":self.range, "units":self.units});                             
   
-
+ 
             if not (self.combinedFrames == []):                
                 dataFFT = self.complexLibrary.fftReversed(self.combinedFrames);
             else:
@@ -76,12 +76,12 @@ class PlotClass(object):
             dataFFT = self.matLibrary.reshape(dataFFT,[spectrumLength,1]);            
 
 
+
+          
             if not self.range:
-                #self.figure.plot({"xAxis":self.axis,"Data":dataFFT.real,"Title":self.Title,"XLabel":self.XLabel,"YLabel":self.YLabel});
                 self.figure.xplot({"volumeNode":volumeNode,"xAxis":self.axis,"Data":dataFFT.real,"Title":self.Title,"XLabel":self.XLabel,"YLabel":self.YLabel});
-            else:  
-                #self.figure.plot({"xAxis":self.axis[self.pointRange],"Data":dataFFT.real[self.pointRange],"Title":self.Title,"XLabel":self.XLabel,"YLabel":self.YLabel});   
-                self.figure.xplot({"volumeNode":volumeNode,"xAxis":self.axis[self.pointRange],"Data":dataFFT.real[self.pointRange],"Title":self.Title,"XLabel":self.XLabel,"YLabel":self.YLabel});   
+            else:                 
+                self.figure.xplot({"pointRange":self.pointRange,"reverseXAxis":True,"volumeNode":volumeNode,"xAxis":self.axis,"Data":dataFFT.real,"Title":self.Title,"XLabel":self.XLabel,"YLabel":self.YLabel});   
                 
     """  end %%% plotSpectrum %%% """
     

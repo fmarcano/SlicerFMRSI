@@ -167,20 +167,6 @@ class SpectrumClass(object):
                                  fac, pointAxis + self.matLibrary.eps(),w),[2,1,0]);
                       
             
-           # ###############################
-            shap =  np.shape(NWS)
-            if (shap[1] > 8):        
-                """
-            
-                from fMRSICore import PlotClass as PC
-                from fMRSICore import ComplexLibraryClass as CL
-                pc = PC.PlotClass();
-                cl = CL.ComplexLibraryClass();
-                pc.plot({"xAxis":pointAxis,"Data":(cl.fftShifted(Smoothed[:,6,5])).real,"Title":"Smoothed","XLabel":"Points","YLabel":"A.U"});
-                print fac, self.waterSuppressionFactor, 10.0**(-self.waterSuppressionFactor);  
-                print Smoothed[0:50,6,5]
-                print Smoothed[-50:,6,5]
-                """
                 
             NWS = NWS - Smoothed;
 
