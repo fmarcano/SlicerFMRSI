@@ -458,7 +458,9 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
         volumeNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
     
     self.spectrumObject = spectrumClass.SpectrumClass();
-    self.combinedFrames, _ , self.signalPower, self.spectrumPower  = self.spectrumObject.processSpectra(volumeNode,fMRSI);    
+    self.combinedFrames, self.reshapedSignal , self.signalPower, self.spectrumPower  = self.spectrumObject.processSpectra(volumeNode,fMRSI);    
+    print 'Reshaped signal shape = ' , np.shape(self.reshapedSignal)
+    
     
     
     
