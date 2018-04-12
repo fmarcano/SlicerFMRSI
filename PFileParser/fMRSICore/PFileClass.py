@@ -1,4 +1,5 @@
 import numpy as np 
+import vtk
 
 class PFileClass(object):
     """ properties """        
@@ -91,6 +92,16 @@ class PFileClass(object):
         attrs = vars(self);
         sortedItems = attrs.items();
         sortedItems.sort();
+        return ' '.join("\n%s: %s" % item for item in sortedItems );
+
+    def info(self,node):
+        attrs = vtk.vtkStringArray();
+        node.GetAttributeNames(attrs);
+        sortedItems = [];
+        for ix in range(0,attrs.GetNumberOfValues()):
+            A = attrs.GetValue(ix);
+            sortedItems.append((A,node.GetAttribute(A)));
+        sortedItems.sort();        
         return ' '.join("\n%s: %s" % item for item in sortedItems );
 
     def show(self):

@@ -1,0 +1,48 @@
+mainWindow = slicer.util.mainWindow()
+mainWindow.moduleSelector().selectModule('PFileParser')
+
+
+import numpy as np
+volumeNodes = slicer.mrmlScene.GetNodesByName('sample')
+volumeNodes.InitTraversal()
+volumeNode = volumeNodes.GetItemAsObject(0)
+volumeProperties = slicer.mrmlScene.GetNodesByName('VolumeProperty')
+volumeProperties.InitTraversal()
+volumePropertyNode = volumeProperties.GetItemAsObject(0)
+volumeProperty = volumePropertyNode.GetVolumeProperty()
+
+volumeRenderingNode = slicer.mrmlScene.GetFirstNodeByName('VolumeRendering')
+annotationROI = slicer.mrmlScene.GetFirstNodeByName('AnnotationROI')
+annotationROI.SetDisplayVisibility(1)
+p = [0,0,0]; annotationROI.GetXYZ(p)
+p[2] = -15
+annotationROI.SetXYZ(p)
+
+
+volumeRenderingNode.SetCroppingEnabled(1)
+
+transferFunction = volumeProperty.GetRGBTransferFunction()
+
+
+scalarOpacityFunction = volumeProperty.GetScalarOpacity();
+rang = np.array(scalarOpacityFunction.GetRange())
+scalarOpacityFunction.AdjustRange([0,20000])
+volumeProperty.SetScalarOpacity(scalarOpacityFunction)
+
+
+layoutManager = slicer.app.layoutManager()
+redWidget = layoutManager.sliceWidget('Red')
+redController = redWidget.sliceController()
+redController.setSliceOffsetValue(100)
+
+volumeRenderingNode = slicer.mrmlScene.GetFirstNodeByName('VolumeRendering')
+annotationROI = slicer.mrmlScene.GetFirstNodeByName('AnnotationROI')
+annotationROI.SetDisplayVisibility(1)
+
+p1 = [0,0,0]; 
+annotationROI.GetXYZ(p1)
+p1 = [p1[0],p1[1],p1[2]-sz2[2]];
+annotationROI.SetRadiusXYZ(p1)  
+annotationROI.GetXYZ(p1)
+p1 = [p1[0],p1[1],p1[2]-2*sz2[2]];
+annotationROI.SetXYZ(p1)  

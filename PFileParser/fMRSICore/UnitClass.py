@@ -8,6 +8,12 @@ class UnitClass(object):
     STATUS_OK = 0;
     status = STATUS_OK ;
     
+    PPM    = "ppm"
+    HZ     = "hz"
+    POINTS = "points"
+    ALL    = "all"
+    
+    
     centralFrequency = 127732436.76;
     GdShift = 0.0;
     hzRange = [-2500,2500];     # Hz
@@ -172,9 +178,12 @@ class UnitClass(object):
         pointRangeArray = np.array(range(0,spectrumLength));
         pointRangeShifted = np.fft.ifftshift(pointRangeArray);
         
-        # First limit greater than (python), greater equal (otherwise) ; second, less equal (any lang).
-        pointROI = pointRangeShifted[np.logical_and((reverseXAxis > rang[0]), (reverseXAxis <=rang[1]))];
-        pointRange = pointROI;
+        
+        if (rang == self.ALL):
+            # First limit greater than (python), greater equal (otherwise) ; second, less equal (any lang).
+            pointRange = pointRangeShifted;
+        else:        
+            pointRange = pointRangeShifted[np.logical_and((reverseXAxis > rang[0]), (reverseXAxis <=rang[1]))];
         
         return pointRange;      
         

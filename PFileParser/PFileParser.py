@@ -24,6 +24,8 @@ from fMRSICore import PFileClass as pFileClass
 from fMRSICore import ComplexLibraryClass as complexLibraryClass
 from fMRSICore import PlotClass as plotClass
 from fMRSICore import UnitClass as unitClass
+from fMRSICore import SpectrumClass as spectrumClass
+from fMRSICore import RenderClass as renderClass
 import math
 
 
@@ -115,17 +117,17 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     #  Layout within the sample collapsible button
     formLayout = qt.QFormLayout(pCollapsibleBar)
 
-    #  Frame input edit sub-layout
+    #  ============= Frame input edit sub-layout ==========
     frameLayout = qt.QHBoxLayout(pCollapsibleBar)
 
     pStartAtFrameText = self.createFrameText(frameLayout,"From frame: ",100,"First frame to be read from fMRSI file (1 = first).");
-
+    
     #  Add spacer
     frameLayout.addStretch(1)
     
     #  Text input frame end
     pStopAtFrameText = self.createFrameText(frameLayout,"To frame: ",100,"Last frame to be read from fMRSI file.");
-
+     
     #  Add horizontal frame to form layout
     formLayout.addRow(frameLayout);
     
@@ -133,7 +135,7 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     #  Button widget code
     pFileButton = qt.QPushButton("Read PFile...")
     pFileButton.toolTip = "Load raw PFile (.7) data"
-    pFileButton.enabled = False
+    pFileButton.enabled = True
     formLayout.addRow(pFileButton)
     
     #  =============== Radio Buttons ========
@@ -186,6 +188,9 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     #  connections
     pFileButton.connect('clicked(bool)', self.onPFileButtonClicked)
     pPlotSpectrumButton.connect('clicked(bool)', self.onPlotSpectrumButtonClicked)
+    pStartAtFrameText.textChanged.connect(self.onStartAtFrameChanged);
+    pInfoText.textChanged.connect(self.onInfoTextChanged);
+    pStopAtFrameText.textChanged.connect( self.onStopAtFrameChanged);
     self.inputSelector.connect('currentNodeChanged(vtkMRMLNode*)', self.onSelect)
 
     for units in self.units:
@@ -285,7 +290,16 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
   #% 
   def onFrameSliderValueChanged(self, newValue):
     self.logic.plotSpectrum(newValue,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
-   
+
+  def onInfoTextChanged(self):
+    if (self.pInfoText.toPlainText().strip() != '') :
+        self.setUnits(self.units[0])         
+        self.pFrameSlider.setEnabled(True);
+        self.pXAxisRange.setEnabled(True);
+        self.pUnitsBox.setEnabled(True); 
+
+        self.pPlotSpectrumButton.setEnabled(True);
+    
   
   #%  onPFileButtonClicked(self):
   #%      Event handling for "Plot Spectrum" button  
@@ -294,20 +308,31 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
   #%          20180208 - "if fMRSI...else..." statement added  
   #% 
   def onPFileButtonClicked(self):
+    slicer.mrmlScene.Clear(0)
+    
+    if not slicer.util.openAddVolumeDialog():
+        return;       
+    
+    if not slicer.util.confirmOkCancelDisplay('Continue reading spectrum file'):
+        return;
+    
     fMRSI = self.logic.doParse(self.inputSelector.currentNode(),[self.pStartAtFrameText.text,self.pStopAtFrameText.text]);
 
     if fMRSI:
         self.logic.createfMRSINode(fMRSI);    
-        self.setInfo(fMRSI.info());
-        self.setUnits(self.units[0])
-        self.pPlotSpectrumButton.setEnabled(True);
-        self.pFrameSlider.maximum = fMRSI.sout.size / fMRSI.rh_frame_size;
-        self.pFrameSlider.setEnabled(True);
-        self.pXAxisRange.setEnabled(True);
-        self.pUnitsBox.setEnabled(True); 
-        self.onPlotSpectrumButtonClicked();     
+        #self.setUnits(self.units[0]) 
+        maxFrameValue = self.pStopAtFrameText.text.strip();
+        if maxFrameValue == '': 
+            self.pFrameSlider.maximum = fMRSI.sout.size / fMRSI.rh_frame_size;
+        else:
+            self.pFrameSlider.maximum = int(maxFrameValue);
     else:
         self.pPlotSpectrumButton.setEnabled(False);
+        
+    self.logic.showInfo(self.pInfoText);
+ 
+    if fMRSI:
+        self.onPlotSpectrumButtonClicked();   
   
   #%  onPlotSpectrumButtonClicked(self):
   #%      Event handling for "Plot Spectrum" button  
@@ -335,12 +360,24 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
   #%          20180208 - Function definition 
   #% 
   def onSelect(self):
-    self.pFileButton.enabled = self.inputSelector.currentNode() 
+    #self.pFileButton.enabled = self.inputSelector.currentNode() 
 
-    #  Clean info if input volume not selected
-    if not self.pFileButton.enabled:
-        self.setInfo('');
-
+    # #  Clean info if input volume not selected
+    # if not self.pFileButton.enabled:
+    #    self.setInfo('');
+    self.logic.showInfo(self.pInfoText);
+    
+    return 
+    
+  def onStartAtFrameChanged(self,value):
+    if not (value == []):
+        self.pFrameSlider.minimum = int(value);    
+  
+  def onStopAtFrameChanged(self,value):
+    if not (value == []):
+        self.pFrameSlider.maximum = int(value);    
+  
+  
   #%  onXAxisRangeValueChanged(self,minimum,maximum):
   #%      Event handling for value changes in pFrameSlider slider  
   #%  
@@ -372,6 +409,7 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   #%          20180208 - scalarNodeFMRSIName   
   #% 
   scalarNodeFMRSIName = 'scalarNodeFMRSI';
+  scalarNodeProcessedFMRSIName = 'scalarNodeProcessedFMRSI';
 
   
   #%  createfMRSINode(self,fMRSI):
@@ -382,7 +420,9 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   #% 
   def createfMRSINode(self,fMRSI):   
     #  Delete previous existing nodes
-    slicer.mrmlScene.RemoveNode(slicer.util.getNode(self.scalarNodeFMRSIName));
+    if (slicer.mrmlScene.GetNodesByName(self.scalarNodeFMRSIName)).GetNumberOfItems() != 0:
+        slicer.mrmlScene.RemoveNode(slicer.util.getNode(self.scalarNodeFMRSIName));
+  
     spectrumLength = fMRSI.rh_frame_size;
     narray = np.asarray(fMRSI.sout);
     narrayLen = len(narray);
@@ -406,19 +446,26 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   
     sceneNode = slicer.mrmlScene.AddNode(volumeNode);
     sceneNode.SetName(self.scalarNodeFMRSIName);
-    volumeNode = slicer.util.getNode(self.scalarNodeFMRSIName)
+    
+    # volumeNode = slicer.util.getNode(self.scalarNodeFMRSIName)
     
     if volumeNode is not None: 
         complexLibrary = complexLibraryClass.ComplexLibraryClass();        
         voxelArray = complexLibrary.complexArray(slicer.util.array(self.scalarNodeFMRSIName),narray,vshape[0:2]);             
-        volumeNode.SetAttribute('centralFrequency',str(fMRSI.central_freq));
-        volumeNode.SetAttribute('ppmReference',str(fMRSI.ppm_reference));
-        volumeNode.SetAttribute('spectralBandwidth',str(fMRSI.spectral_width));
-        volumeNode.SetAttribute('spectrumLength',str(fMRSI.rh_frame_size));
+        self.setAttributes2fMRSINode(volumeNode,fMRSI);
         volumeNode.StorableModified()
         volumeNode.Modified()
         volumeNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
-
+    
+    self.spectrumObject = spectrumClass.SpectrumClass();
+    self.combinedFrames, self.reshapedSignal , self.signalPower, self.spectrumPower  = self.spectrumObject.processSpectra(volumeNode,fMRSI);    
+    print 'Reshaped signal shape = ' , np.shape(self.reshapedSignal)
+    
+    
+    
+    
+    
+        
   #%  doParse(self,node,frameRangeSpec):  
   #%      PFile reading
   #% 
@@ -438,7 +485,7 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
         a.parseFile({"fileName":fileName,"frameRange":frameRange});
         return(a);
     else:
-        return(false);
+        return(False);
   
     
   #%  getFrameRange(self,frameRangeSpec):
@@ -491,9 +538,39 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   def plotSpectrum(self,N,xRange,units):
     N = N -  1;
     plotSpectrum = plotClass.PlotClass();
-    plotSpectrum.plotSpectrum({"volumeNodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});     
-    return;
+    #plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});     
+    plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName ,"combinedFrames":self.combinedFrames , "range":xRange, "units":units});     
     
+    self.renderObject = renderClass.RenderClass();
+    
+    image3DScalarVolumeNode = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLScalarVolumeNode');
+    
+    self.renderObject.voxelRender({"nodeName":self.scalarNodeFMRSIName,"image3DScalarVolumeNode":image3DScalarVolumeNode})
+
+  
+  #% setAttributes2fMRSINode(node): 
+  #%      Sets specific attribute values taken from PFile to input node  
+  #%  
+  #%      History:
+  #%          20180301 - Function definition   
+  #%   
+  def setAttributes2fMRSINode(self,node,fMRSI):
+    node.SetAttribute('centralFrequency',str(fMRSI.central_freq));
+    node.SetAttribute('ppmReference',str(fMRSI.ppm_reference));
+    node.SetAttribute('spectralBandwidth',str(fMRSI.spectral_width));
+    node.SetAttribute('spectrumLength',str(fMRSI.rh_frame_size));
+    node.SetAttribute('totalFrames',str(fMRSI.total_frames_per_coil));
+    node.SetAttribute('channels',str(fMRSI.num_channels));
+    node.SetAttribute('zeroFrame',str(fMRSI.zero_frame));
+    node.SetAttribute('waterFrames',str(fMRSI.water_frames));
+    node.SetAttribute('ctr_A',str(fMRSI.ctr_A));
+    node.SetAttribute('ctr_R',str(fMRSI.ctr_R));
+    node.SetAttribute('ctr_S',str(fMRSI.ctr_S));
+    node.SetAttribute('roilenx',str(fMRSI.roilenx));
+    node.SetAttribute('roileny',str(fMRSI.roileny));
+    node.SetAttribute('roilenz',str(fMRSI.roilenz));
+ 
+ 
   #%  setXRangeSlide(self,fromUnits,toUnits,limit1,limit2):
   #%      Determines values for X axis range slider   
   #%  
@@ -502,7 +579,7 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   #%   
   def setXRangeSlide(self,fromUnits,toUnits,limit1,limit2):
   
-    node = slicer.util.getNode('scalarNodeFMRSI');
+    node = slicer.util.getNode(self.scalarNodeFMRSIName);
     spectrumLength = int(node.GetAttribute('spectrumLength'));
     spectralBandwidth = float(node.GetAttribute('spectralBandwidth'));
     ppmReference = float(node.GetAttribute('ppmReference'));
@@ -533,6 +610,11 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
 
   #   =============== Default module wizard methods =====================
   
+  def showInfo(self,textObj):
+    volumeNode = slicer.mrmlScene.GetFirstNodeByName(self.scalarNodeFMRSIName)
+    if not (volumeNode is None):
+        textObj.setPlainText(pFileClass.PFileClass().info(volumeNode));
+
   def hasImageData(self,volumeNode):
     """This is an example logic method that
     returns true if the passed in volume
