@@ -75,9 +75,6 @@ class PlotClass(object):
             
             dataFFT = self.matLibrary.reshape(dataFFT,[spectrumLength,1]);            
 
-
-
-          
             if not self.range:
                 self.figure.xplot({"volumeNode":volumeNode,"xAxis":self.axis,"Data":dataFFT.real,"Title":self.Title,"XLabel":self.XLabel,"YLabel":self.YLabel});
             else:                 

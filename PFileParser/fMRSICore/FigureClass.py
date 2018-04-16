@@ -12,6 +12,7 @@ class FigureClass(object):
     #figureArrangement = 24; # four up quantitative
     #figureArrangement = 26; # quantitative only
     figureArrangement = 36; # Conventional quantitative interactive
+    figureArrangementSpectrumOnly = 39; # Quantitative Interactive
     
     Title = ' ';
     XLabel = ' ';
@@ -134,8 +135,9 @@ class FigureClass(object):
         layoutNodes.InitTraversal()
         layoutNode = layoutNodes.GetNextItemAsObject()
         
-        # TODO: DEFINE A PARAMETER FOR THIS
-        layoutNode.SetViewArrangement(self.figureArrangement); 
+        arr = layoutNode.GetViewArrangement();
+        if not (arr == self.figureArrangement or arr == self.figureArrangementSpectrumOnly):
+            layoutNode.SetViewArrangement(self.figureArrangement); 
         
     def plot(self,args):
     

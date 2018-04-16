@@ -81,9 +81,13 @@ class RenderClass(object):
     def volumeRender(self,sz2):
         logic = slicer.modules.volumerendering.logic()
         volumeNode = self.image3DScalarVolumeNode;
-        displayNode = logic.CreateVolumeRenderingDisplayNode()
-        slicer.mrmlScene.AddNode(displayNode)
-        displayNode.UnRegister(logic)
+        displayNode = logic.GetFirstVolumeRenderingDisplayNode(volumeNode)
+        
+        if (displayNode is None):
+            displayNode = logic.CreateVolumeRenderingDisplayNode()
+            slicer.mrmlScene.AddNode(displayNode)
+            displayNode.UnRegister(logic)
+            
         logic.UpdateDisplayNodeFromVolumeNode(displayNode, volumeNode)
         volumeNode.AddAndObserveDisplayNodeID(displayNode.GetID()) 
 
@@ -98,7 +102,6 @@ class RenderClass(object):
         annotationROI.GetXYZ(p1)
         p1 = [p1[0],p1[1],p1[2]-2*sz2[2]];
         annotationROI.SetXYZ(p1)  
-
 
         volumeRenderingNode.SetCroppingEnabled(True)
         

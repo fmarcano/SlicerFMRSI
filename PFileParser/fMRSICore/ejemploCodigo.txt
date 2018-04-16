@@ -46,3 +46,33 @@ annotationROI.SetRadiusXYZ(p1)
 annotationROI.GetXYZ(p1)
 p1 = [p1[0],p1[1],p1[2]-2*sz2[2]];
 annotationROI.SetXYZ(p1)  
+
+import numpy as np
+from fMRSICore import ComplexLibraryClass as complexLibraryClass
+complexLibrary = complexLibraryClass.ComplexLibraryClass()
+node = slicer.mrmlScene.GetFirstNodeByName('scalarNodeFMRSI')
+np.shape(node.GetImageData().GetPointData().GetScalars())
+
+vtk.util.numpy_support.vtk_to_numpy(node.GetImageData().GetPointData().GetScalars())
+node.GetImageData().GetDimensions()
+
+
+        #originalVoxelArray = complexLibrary.complexArray(slicer.util.array(self.scalarNodeFMRSIName),A,vshape[0:2]);             
+        #volumeNode.StorableModified()
+        #volumeNode.Modified()
+        #volumeNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
+    
+        volumeImageData = vtk.util.numpy_support.vtk_to_numpy(volumeNode.GetImageData().GetPointData().GetScalars()).reshape(tuple(reversed(vshape)))       
+        originalData = complexLibrary.complexArray(volumeImageData[0:2,],narray,vshape[0:2]);
+        print np.shape(self.reshapedSignal)
+        #processedData = complexLibrary.complexArray(volumeImageData[2:4,],reshapedSignal,vshape[0:2]);
+    
+(vtk.util.numpy_support.vtk_to_numpy(node.GetImageData().GetPointData().GetScalars())).reshape((2,4096))
+
+
+
+
+
+logic = slicer.modules.volumerendering.logic()
+image3DScalarVolumeNode = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLScalarVolumeNode');
+volumeNode = image3DScalarVolumeNode;

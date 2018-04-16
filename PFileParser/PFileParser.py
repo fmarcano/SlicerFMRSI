@@ -162,7 +162,7 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     pFrameSlider.minimum = 1;
     pFrameSlider.maximum = 1;    
     pFrameSlider.enabled = False;        
-    formLayout.addRow("Frame:", pFrameSlider);
+    #formLayout.addRow("Frame:", pFrameSlider);
     
     #  X axis Slider
     pXAxisRange = ctk.ctkRangeWidget()   
@@ -294,7 +294,11 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
   def onInfoTextChanged(self):
     if (self.pInfoText.toPlainText().strip() != '') :
         self.setUnits(self.units[0])         
-        self.pFrameSlider.setEnabled(True);
+        
+        # Desactivado hasta proxima version
+        #self.pFrameSlider.setEnabled(False);
+
+        
         self.pXAxisRange.setEnabled(True);
         self.pUnitsBox.setEnabled(True); 
 
@@ -409,8 +413,9 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   #%          20180208 - scalarNodeFMRSIName   
   #% 
   scalarNodeFMRSIName = 'scalarNodeFMRSI';
-  scalarNodeProcessedFMRSIName = 'scalarNodeProcessedFMRSI';
-
+  scalarNodeCombinedFMRSIName = 'scalarNodeCombinedFMRSI';
+  scalarNodeReshapedFMRSIName = 'scalarNodeReshapedFMRSI';
+  combinedFrames = None;
   
   #%  createfMRSINode(self,fMRSI):
   #%      Creates new fMRSI scalar node from input struct (fMRSI from doParse)
@@ -419,52 +424,80 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   #%          20180208 - Function definition   
   #% 
   def createfMRSINode(self,fMRSI):   
+    def createScalarNode(name,vshape,dataType,ncomponents):
+        node = slicer.vtkMRMLScalarVolumeNode();        
+        vimage = node.GetImageData()
+
+        if not vimage:
+            vimage = vtk.vtkImageData()
+            node.SetAndObserveImageData(vimage)
+       
+        vtype = vtk.util.numpy_support.get_vtk_array_type(dataType)
+        vimage.SetDimensions(vshape)
+        vimage.AllocateScalars(vtype, ncomponents)
+      
+        #  Notification (image data change)
+        node.StorableModified()
+        node.Modified()
+        node.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, node)
+      
+        sceneNode = slicer.mrmlScene.AddNode(node);
+        sceneNode.SetName(name);
+    
+        return node;
+
     #  Delete previous existing nodes
     if (slicer.mrmlScene.GetNodesByName(self.scalarNodeFMRSIName)).GetNumberOfItems() != 0:
         slicer.mrmlScene.RemoveNode(slicer.util.getNode(self.scalarNodeFMRSIName));
   
+    if (slicer.mrmlScene.GetNodesByName(self.scalarNodeCombinedFMRSIName)).GetNumberOfItems() != 0:
+        slicer.mrmlScene.RemoveNode(slicer.util.getNode(self.scalarNodeCombinedFMRSIName));
+  
     spectrumLength = fMRSI.rh_frame_size;
     narray = np.asarray(fMRSI.sout);
-    narrayLen = len(narray);
-    volumeNode = slicer.vtkMRMLScalarVolumeNode();        
+    
     vcomponents = 1;
     vshape = tuple((spectrumLength,narray.shape[0]/spectrumLength,2));
-    vimage = volumeNode.GetImageData()
-
-    if not vimage:
-        vimage = vtk.vtkImageData()
-        volumeNode.SetAndObserveImageData(vimage)
-   
-    vtype = vtk.util.numpy_support.get_vtk_array_type(narray.dtype)
-    vimage.SetDimensions(vshape)
-    vimage.AllocateScalars(vtype, vcomponents)
-  
-    #  Notification (image data change)
-    volumeNode.StorableModified()
-    volumeNode.Modified()
-    volumeNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
-  
-    sceneNode = slicer.mrmlScene.AddNode(volumeNode);
-    sceneNode.SetName(self.scalarNodeFMRSIName);
     
-    # volumeNode = slicer.util.getNode(self.scalarNodeFMRSIName)
-    
+    volumeNode = createScalarNode(self.scalarNodeFMRSIName,vshape,narray.dtype,vcomponents);
+        
     if volumeNode is not None: 
         complexLibrary = complexLibraryClass.ComplexLibraryClass();        
-        voxelArray = complexLibrary.complexArray(slicer.util.array(self.scalarNodeFMRSIName),narray,vshape[0:2]);             
+        self.spectrumObject = spectrumClass.SpectrumClass();
+   
         self.setAttributes2fMRSINode(volumeNode,fMRSI);
+        self.combinedFrames, self.reshapedSignal , self.signalPower, self.spectrumPower  = self.spectrumObject.processSpectra(volumeNode,fMRSI);    
+
+        voxelArray = complexLibrary.complexArray(slicer.util.array(self.scalarNodeFMRSIName),narray,vshape[0:2]);             
+
+        narrayCombined = np.asarray(self.combinedFrames);
+        vshapeCombined = tuple((spectrumLength,1,2)); 
+        combinedNode = createScalarNode(self.scalarNodeCombinedFMRSIName,vshapeCombined,narrayCombined.dtype,vcomponents);
+        voxelArrayCombined = complexLibrary.complexArray(slicer.util.array(self.scalarNodeCombinedFMRSIName),narrayCombined,vshapeCombined[0:2]);
+        combinedNode.SetAttribute('shape',str(np.shape(self.combinedFrames)));        
+
+        szReshaped = np.shape(self.reshapedSignal);
+        
+        narrayReshaped = np.asarray(self.reshapedSignal);
+        vshapeReshaped  = tuple((szReshaped[0],szReshaped[1] * szReshaped[2],2)); 
+        reshapedNode = createScalarNode(self.scalarNodeReshapedFMRSIName,vshapeReshaped,narrayReshaped.dtype,vcomponents);
+        voxelArrayReshaped = complexLibrary.complexArray(slicer.util.array(self.scalarNodeReshapedFMRSIName),narrayReshaped,vshapeReshaped[0:2]);             
+        reshapedNode.SetAttribute('shape',str(np.shape(self.reshapedSignal)));        
+        
+                
+        # Revisar esto
+        
         volumeNode.StorableModified()
         volumeNode.Modified()
         volumeNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
-    
-    self.spectrumObject = spectrumClass.SpectrumClass();
-    self.combinedFrames, self.reshapedSignal , self.signalPower, self.spectrumPower  = self.spectrumObject.processSpectra(volumeNode,fMRSI);    
-    print 'Reshaped signal shape = ' , np.shape(self.reshapedSignal)
-    
-    
-    
-    
-    
+
+        combinedNode.StorableModified()
+        combinedNode.Modified()
+        #combinedNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
+     
+        reshapedNode.StorableModified()
+        reshapedNode.Modified()
+        #reshapedNode.InvokeEvent(slicer.vtkMRMLVolumeNode.ImageDataModifiedEvent, volumeNode)
         
   #%  doParse(self,node,frameRangeSpec):  
   #%      PFile reading
@@ -526,6 +559,23 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
         fileName = pathName + '/' + fileName;
     return fileName;
 
+  def loadDataFromStoredVolume(self):
+        node = slicer.mrmlScene.GetFirstNodeByName(self.scalarNodeCombinedFMRSIName);
+        if node is None:
+            return False;
+        
+        sz = eval(node.GetAttribute('shape')); # sz = (1,spectrumLength)       
+        complexArray = (vtk.util.numpy_support.vtk_to_numpy(node.GetImageData().GetPointData().GetScalars())).reshape((2,sz[1]));
+        self.combinedFrames = [complexArray[0] + 1j*complexArray[1]];
+ 
+        reshapedNode = slicer.mrmlScene.GetFirstNodeByName(self.scalarNodeReshapedFMRSIName);        
+
+        sz = eval(reshapedNode.GetAttribute('shape')); # sz = (spectrumlength,nframes,ncoils)        
+        reshapedComplexArray = (vtk.util.numpy_support.vtk_to_numpy(reshapedNode.GetImageData().GetPointData().GetScalars())).reshape((2,sz[0],sz[1],sz[2]));
+        self.reshapedSignal = np.squeeze([reshapedComplexArray[0] + 1j*reshapedComplexArray[1]]);
+
+        return True;
+  
   #%  plotSpectrum(self,value,xRange,units):
   #%      Spectrum plot.
   #%      N:          spectrum to be plotted
@@ -536,9 +586,15 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   #%          20180208 - Function definition   
   #%         
   def plotSpectrum(self,N,xRange,units):
-    N = N -  1;
+    # None --> data being read from stored volume node in disk, not from PFile.
+    if self.combinedFrames is None:
+        if not self.loadDataFromStoredVolume():
+            return;
+        
+    #N = N -  1;
     plotSpectrum = plotClass.PlotClass();
     #plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});     
+    
     plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName ,"combinedFrames":self.combinedFrames , "range":xRange, "units":units});     
     
     self.renderObject = renderClass.RenderClass();
@@ -547,6 +603,7 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
     
     self.renderObject.voxelRender({"nodeName":self.scalarNodeFMRSIName,"image3DScalarVolumeNode":image3DScalarVolumeNode})
 
+  
   
   #% setAttributes2fMRSINode(node): 
   #%      Sets specific attribute values taken from PFile to input node  
