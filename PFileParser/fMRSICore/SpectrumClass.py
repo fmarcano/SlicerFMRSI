@@ -29,8 +29,21 @@ class SpectrumClass(object):
    
     # U572_FM_Project_Get_Proc_Spectra_And_Sum
     def calculateCombinedFrames(self):
-        permutTransp = (self.matLibrary.permute(self.reshapedSignal.copy(),[2,1,0]))[0,:,:];        
+        ### V2 - Error detectado. Correccion debajo.
+        #permutTransp = (self.matLibrary.permute(self.reshapedSignal.copy(),[2,1,0]))[0,:,:];        
+        #self.combinedFrames = self.matLibrary.mean(permutTransp);
+
+        permutTransp = (self.matLibrary.permute(self.reshapedSignal.copy(),[2,1,0]));        
         self.combinedFrames = self.matLibrary.mean(permutTransp);
+        self.combinedFrames = self.combinedFrames[0,:,:]
+        self.combinedFrames = self.matLibrary.mean(self.combinedFrames);
+
+                
+        ### V2 - Calculo de bobinas combinadas.                
+        permutTransp = (self.matLibrary.permute(self.reshapedSignal.copy(),[2,0,1]));        
+        self.combinedCoils = self.matLibrary.mean(permutTransp);
+        self.combinedCoils = self.combinedCoils[0,:,:];
+        
    
 
                  
@@ -225,4 +238,4 @@ class SpectrumClass(object):
         
         self.calculateFramePower();      
         
-        return self.combinedFrames, self.reshapedSignal, self.signalPower, self.spectrumPower 
+        return self.combinedFrames, self.reshapedSignal, self.signalPower, self.spectrumPower, self.combinedCoils 

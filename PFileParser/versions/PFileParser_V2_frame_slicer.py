@@ -26,7 +26,6 @@ from fMRSICore import PlotClass as plotClass
 from fMRSICore import UnitClass as unitClass
 from fMRSICore import SpectrumClass as spectrumClass
 from fMRSICore import RenderClass as renderClass
-from fMRSICore import MatLibraryClass as matLibraryClass
 import math
 
 
@@ -163,7 +162,7 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     pFrameSlider.minimum = 1;
     pFrameSlider.maximum = 1;    
     pFrameSlider.enabled = False;
-    ###### V2 - TEST 20180628    
+    ###### TEST 20180628    
     formLayout.addRow("Frame:", pFrameSlider);
     
     #  X axis Slider
@@ -179,19 +178,6 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     pPlotSpectrumButton.toolTip = "Plot mean single voxel spectrum from PFile (.7) data"
     pPlotSpectrumButton.enabled = False
     formLayout.addRow(pPlotSpectrumButton)   
-
-    ###### V2 - TEST 20180628    
-    pRunFramesButton = qt.QPushButton("Run frames...")
-    pRunFramesButton.toolTip = "Plot frame sequence (experimental)"
-    pRunFramesButton.enabled = False
-    formLayout.addRow(pRunFramesButton)   
-
-    ###### V2 - TEST 20180628    
-    pPlotVoxelButton = qt.QPushButton("Plot 3D + Voxel...")
-    pPlotVoxelButton.toolTip = "Plot voxel model (experimental)"
-    pPlotVoxelButton.enabled = False
-    formLayout.addRow(pPlotVoxelButton)   
-
     
     #  ============== Info Text ==============
     #  Text Info  
@@ -203,13 +189,6 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     #  connections
     pFileButton.connect('clicked(bool)', self.onPFileButtonClicked)
     pPlotSpectrumButton.connect('clicked(bool)', self.onPlotSpectrumButtonClicked)
-
-    ###### V2 - TEST 20180628    
-    pRunFramesButton.connect('clicked(bool)', self.onRunFramesButtonClicked)
-
-    ###### V2 - TEST 20180628    
-    pPlotVoxelButton.connect('clicked(bool)', self.onPlotVoxelButtonClicked)
-
     pStartAtFrameText.textChanged.connect(self.onStartAtFrameChanged);
     pInfoText.textChanged.connect(self.onInfoTextChanged);
     pStopAtFrameText.textChanged.connect( self.onStopAtFrameChanged);
@@ -221,13 +200,6 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     #  Set local var as instance attribute
     self.pFileButton = pFileButton
     self.pPlotSpectrumButton = pPlotSpectrumButton
-    
-    ###### V2 - TEST 20180628 
-    self.pRunFramesButton = pRunFramesButton
-
-    ###### V2 - TEST 20180628 
-    self.pPlotVoxelButton = pPlotVoxelButton
-      
     self.pInfoText = pInfoText ;
     self.pStartAtFrameText = pStartAtFrameText;
     self.pStopAtFrameText = pStopAtFrameText;
@@ -318,27 +290,21 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
   #%          20180208 - Function definition   
   #% 
   def onFrameSliderValueChanged(self, newValue):
-    self.logic.plotSpectrumSlide(newValue,False,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
+    self.logic.plotSpectrum(newValue,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
 
   def onInfoTextChanged(self):
     if (self.pInfoText.toPlainText().strip() != '') :
         self.setUnits(self.units[0])         
         
         # Desactivado hasta proxima version
-        ###### V2 - TEST 20180628 
-        self.pFrameSlider.setEnabled(True);
+        ###### TEST 20180628 
+        self.pFrameSlider.setEnabled(False);
 
         
         self.pXAxisRange.setEnabled(True);
         self.pUnitsBox.setEnabled(True); 
 
         self.pPlotSpectrumButton.setEnabled(True);
-       
-        ###### V2 - TEST 20180628 
-        self.pRunFramesButton.setEnabled(True);
-
-        ###### V2 - TEST 20180628 
-        self.pPlotVoxelButton.setEnabled(True);
     
   
   #%  onPFileButtonClicked(self):
@@ -369,18 +335,10 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
     else:
         self.pPlotSpectrumButton.setEnabled(False);
         
-        ###### V2 - TEST 20180628 
-        self.pRunFramesButton.setEnabled(False);
-
-        ###### V2 - TEST 20180628 
-        self.pPlotVoxelButton.setEnabled(False);
-        
-        
     self.logic.showInfo(self.pInfoText);
  
     if fMRSI:
         self.onPlotSpectrumButtonClicked();   
-        
   
   #%  onPlotSpectrumButtonClicked(self):
   #%      Event handling for "Plot Spectrum" button  
@@ -389,34 +347,10 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
   #%          20180208 - Function definition   
   #% 
   def onPlotSpectrumButtonClicked(self):
-    #self.logic.plotSpectrum(self.pFrameSlider.value,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
-    self.logic.plotSpectrum(False,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
+    self.logic.plotSpectrum(self.pFrameSlider.value,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
 
-    
-  ###### V2 - TEST 20180628         
-  #%  onRunFramesButtonClicked(self,units):
-  #%      Event handling 
-  #%  
-  #%      History:
-  #%          20180628 - Function definition   
-  #% 
-  def onRunFramesButtonClicked(self):
-    self.logic.runFrames([self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
-      
-  ###### V2 - TEST 20180628         
-  #%  onPlotVoxelButtonClicked(self,units):
-  #%      Event handling 
-  #%  
-  #%      History:
-  #%          20180628 - Function definition   
-  #% 
-  def onPlotVoxelButtonClicked(self):
-    self.logic.plotVoxel() 
-      
-      
-      
   #%  onPUnitsButtonsClicked(self,units):
-  #%      Event handling for clicks on PUnitButtons 
+  #%      Event handling for clicks on PUnitsButtons 
   #%  
   #%      History:
   #%          20180208 - Function definition   
@@ -424,7 +358,7 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
   def onPUnitsButtonsClicked(self,units):
       self.setUnits(units); 
       self.onPlotSpectrumButtonClicked();   
-
+  
   #%  onSelect(self):
   #%      Visibility handling for pFileButton and info text control initialization
   #% 
@@ -457,8 +391,7 @@ class PFileParserWidget(ScriptedLoadableModuleWidget):
   #%          20180208 - Function definition   
   #% 
   def onXAxisRangeValueChanged(self,minimum,maximum):
-    #self.logic.plotSpectrum(self.pFrameSlider.value,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
-    self.logic.plotSpectrum(False,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
+    self.logic.plotSpectrum(self.pFrameSlider.value,[self.pXAxisRange.minimumValue,self.pXAxisRange.maximumValue],self.selectedUnits) 
     return;
     
       
@@ -485,8 +418,6 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   scalarNodeCombinedFMRSIName = 'scalarNodeCombinedFMRSI';
   scalarNodeReshapedFMRSIName = 'scalarNodeReshapedFMRSI';
   combinedFrames = None;
-  plotTimer  = None;
-  plotSpectrumObj  = None;
   
   #%  createfMRSINode(self,fMRSI):
   #%      Creates new fMRSI scalar node from input struct (fMRSI from doParse)
@@ -537,7 +468,7 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
         self.spectrumObject = spectrumClass.SpectrumClass();
    
         self.setAttributes2fMRSINode(volumeNode,fMRSI);
-        self.combinedFrames, self.reshapedSignal , self.signalPower, self.spectrumPower, self.combinedCoils  = self.spectrumObject.processSpectra(volumeNode,fMRSI);    
+        self.combinedFrames, self.reshapedSignal , self.signalPower, self.spectrumPower  = self.spectrumObject.processSpectra(volumeNode,fMRSI);    
 
         voxelArray = complexLibrary.complexArray(slicer.util.array(self.scalarNodeFMRSIName),narray,vshape[0:2]);             
 
@@ -644,31 +575,9 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
         sz = eval(reshapedNode.GetAttribute('shape')); # sz = (spectrumlength,nframes,ncoils)        
         reshapedComplexArray = (vtk.util.numpy_support.vtk_to_numpy(reshapedNode.GetImageData().GetPointData().GetScalars())).reshape((2,sz[0],sz[1],sz[2]));
         self.reshapedSignal = np.squeeze([reshapedComplexArray[0] + 1j*reshapedComplexArray[1]]);
-       
+
         return True;
-
-    
-  #### V2 - 20180628
-  #%  plotVoxel(self):
-  #%      Voxel model plot.
-  #%  
-  #%      History:
-  #%          20180628 - Function definition   
-  #%         
-  def plotVoxel(self):
-    self.renderObject = renderClass.RenderClass();
-    image3DScalarVolumeNode = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLScalarVolumeNode');    
-    self.renderObject.voxelRender({"nodeName":self.scalarNodeFMRSIName,"image3DScalarVolumeNode":image3DScalarVolumeNode})
-
-    #### TEST - MAXIMOS TODOS LOS FRAMES
-    if fMRSI:
-        print "fMRSI";
-    else:        
-        print "No fMRSI";
-            
-    self.test = PFileParserTest();
-    self.test.test_sequenceModelPlot(self.combinedCoils);
-        
+  
   #%  plotSpectrum(self,value,xRange,units):
   #%      Spectrum plot.
   #%      N:          spectrum to be plotted
@@ -678,106 +587,25 @@ class PFileParserLogic(ScriptedLoadableModuleLogic):
   #%      History:
   #%          20180208 - Function definition   
   #%         
-  def plotSpectrum(self,plotScalar,xRange,units):
+  def plotSpectrum(self,N,xRange,units):
     # None --> data being read from stored volume node in disk, not from PFile.
     if self.combinedFrames is None:
         if not self.loadDataFromStoredVolume():
             return;
         
-    if self.plotSpectrumObj is None:
-        self.plotSpectrumObj = plotClass.PlotClass();
+    #N = N -  1;
+    plotSpectrum = plotClass.PlotClass();
+    #plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});     
     
-    self.plotSpectrumObj.plotSpectrum({"nodeName":self.scalarNodeFMRSIName ,"combinedFrames":self.combinedFrames , "range":xRange, "units":units});     
-
-    if plotScalar:
-        self.plotVoxel();
+    plotSpectrum.plotSpectrum({"nodeName":self.scalarNodeFMRSIName ,"combinedFrames":self.combinedFrames , "range":xRange, "units":units});     
+    
+    self.renderObject = renderClass.RenderClass();
+    
+    image3DScalarVolumeNode = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLScalarVolumeNode');
+    
+    self.renderObject.voxelRender({"nodeName":self.scalarNodeFMRSIName,"image3DScalarVolumeNode":image3DScalarVolumeNode})
 
   
-   
-    
-  #%  plotSpectrumSlide(self,N,value,xRange,units):
-  #%      Spectrum plot.
-  #%      N:          spectrum to be plotted
-  #%      xRange:     range in X axis to be displayed
-  #%      units:      X axis units
-  #%  
-  #%      History:
-  #%          20180208 - Function definition   
-  #%         
-  def plotSpectrumSlide(self,N,plotScalar,xRange,units):
-    # None --> data being read from stored volume node in disk, not from PFile.
-    if self.combinedFrames is None:
-        if not self.loadDataFromStoredVolume():
-            return;
-        
- 
-    if self.plotSpectrumObj is None:
-        self.plotSpectrumObj = plotClass.PlotClass();
-    
-    N = N + 1;
- 
-    self.plotSpectrumObj.plotSpectrum({"nodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});
-
-    if plotScalar:    
-        self.renderObject = renderClass.RenderClass();
-        image3DScalarVolumeNode = slicer.mrmlScene.GetFirstNodeByClass('vtkMRMLScalarVolumeNode');    
-        self.renderObject.voxelRender({"nodeName":self.scalarNodeFMRSIName,"image3DScalarVolumeNode":image3DScalarVolumeNode})
-
-  ### V2 - TEST 20180628
-  #%  runFrames(self,xRange,units):
-  #%      Shows spectrum frame by frame.
-  #%      xRange:     range in X axis to be displayed
-  #%      units:      X axis units
-  #%  
-  #%      History:
-  #%          20180208 - Function definition   
-  #%         
-  def runFrames(self,xRange,units):
-    # None --> data being read from stored volume node in disk, not from PFile.
-    if not (self.plotTimer is None):
-        self.plotTimer.stop()
-        del self.plotTimer
-        self.plotTimer = None;
-        self.plotSpectrum(False,xRange,units);
-        return;
-    
-    if self.combinedFrames is None:
-        if not self.loadDataFromStoredVolume():
-            return;
-        
- 
-    if self.plotSpectrumObj is None:
-        self.plotSpectrumObj = plotClass.PlotClass();
-        
-    self.plotXRange = xRange;
-    self.plotUnits = units;
-    self.plotN = 0;
-    self.plotTimer  = qt.QTimer();
-    self.plotTimer.timeout.connect(self.plotSpectrumSlot);
-    self.plotTimer.start(50);
-    
-    
-  def plotSpectrumSlot(self):
-  
-    N = self.plotN;
-    SZ = np.shape(self.combinedCoils);
-    xRange = self.plotXRange;
-    units = self.plotUnits
-    
-    frame = self.combinedCoils[:,N];
-
-    ### TEMPORAL: HACER ESTO MAS DEFINITIVO, ESTO ES UNA PRUEBA PARA PRESENTAR LOS FRAMES EVOLUCIONANDO EN TIEMPO
-    self.plotSpectrumObj.plotSpectrum({"nodeName":self.scalarNodeFMRSIName ,"combinedFrames":frame[::-1] , "range":xRange, "units":units});     
-
-    #self.plotSpectrumObj.plotSpectrum({"nodeName":self.scalarNodeFMRSIName , "selectedSpectrum":N, "range":xRange, "units":units});
-        
-    #self.plotN = 1 + 8 + (self.plotN + 1) % 160;
-    self.plotN = (self.plotN + 1) % SZ[1];
-        
-    ### TEST: DENTRO DE SLICER (PYTHON COMMAND WINDOW) SE PUEDE FIJAR EL EJE Y:    
-    #nod = getNode('PlotChart')
-    #nod.SetYAxisRangeAuto(False)
-    #nod.SetYAxisRange((-2e+6,8e+6))
   
   #% setAttributes2fMRSINode(node): 
   #%      Sets specific attribute values taken from PFile to input node  
@@ -991,16 +819,4 @@ class PFileParserTest(ScriptedLoadableModuleTest):
     self.assertIsNotNone( logic.hasImageData(volumeNode) )
     self.delayDisplay('Test passed!')
    
-  def test_sequenceModelPlot(self,frames):
-     self.matLibrary = matLibraryClass.MatLibraryClass();
-     permutTransp = (self.matLibrary.permute(frames.copy(),[1,0]));        
-     maxFrameValues = self.matLibrary.max(permutTransp);
-     nod = slicer.util.getNode('fMRSIVoxel');
-     ### CONTINUAR CON LA CREACION DE SECUENCIA PARA EL MODELO...
-     
-     #print "Shape permutTransp = ", np.shape(permutTransp), "     shape maxFrameValues = ", np.shape(maxFrameValues)
-     
-     
-    
-  
- 
+

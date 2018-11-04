@@ -100,6 +100,7 @@ class FigureClass(object):
         plotSeriesNode.SetPlotType(plotSeriesNode.PlotTypeScatter)
         plotSeriesNode.SetMarkerStyle(plotSeriesNode.MarkerStyleNone)
         plotSeriesNode.SetColor(0, 0.6, 1.0)
+        plotSeriesNode.Modified()
 
         # Create chart and add plot
         plotChartNodes = slicer.mrmlScene.GetNodesByClass('vtkMRMLPlotChartNode')
@@ -122,9 +123,9 @@ class FigureClass(object):
         plotChartNode.TitleVisibilityOn()
         plotChartNode.XAxisTitleVisibilityOn()
         plotChartNode.YAxisTitleVisibilityOn()
-        plotChartNode.SetXAxisTitle(self.XLabel);
-        plotChartNode.SetYAxisTitle(self.YLabel);        
-        
+        plotChartNode.SetXAxisTitle(self.XLabel)
+        plotChartNode.SetYAxisTitle(self.YLabel)        
+        plotChartNode.Modified()
         
         # Show plot in layout
         slicer.modules.plots.logic().ShowChartInLayout(plotChartNode)
@@ -210,5 +211,7 @@ class FigureClass(object):
 
         # Tell the Chart View which Chart to display
         chartViewNode.SetChartNodeID(chartNode.GetID())
+        
+
             
     """ end   %%% classdef FigureClass   """

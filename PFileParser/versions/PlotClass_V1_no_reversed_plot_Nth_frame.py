@@ -70,11 +70,7 @@ class PlotClass(object):
             else:
                 data = slicer.util.array(self.nodeName);          
                 N = self.selectedSpectrum;
- 
-                ### V2 - TEST 20180628 Revisar por que debe tratarse distinto al combinado
-                ### probablemente self.combinedFrames ya viene invertido 
-                #dataFFT = self.complexLibrary.fftReversedN(data,int(N));
-                dataFFT = self.complexLibrary.fftN(data,int(N));
+                dataFFT = self.complexLibrary.fftReversedN(data,int(N));
 
             
             dataFFT = self.matLibrary.reshape(dataFFT,[spectrumLength,1]);            
